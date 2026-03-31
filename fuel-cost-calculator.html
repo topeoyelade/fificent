@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fuel Cost Calculator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f5f4;
+      --text-primary: #1a1a18;
+      --text-secondary: #6b6b67;
+      --text-tertiary: #a8a8a4;
+      --border: rgba(0,0,0,0.12);
+      --border-hover: rgba(0,0,0,0.25);
+      --accent-bg: #e6f1fb;
+      --accent-text: #185fa5;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a;
+        --bg-secondary: #252523;
+        --text-primary: #f0ede8;
+        --text-secondary: #a8a8a4;
+        --text-tertiary: #6b6b67;
+        --border: rgba(255,255,255,0.12);
+        --border-hover: rgba(255,255,255,0.25);
+        --accent-bg: #0c2d4a;
+        --accent-text: #85b7eb;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 3rem 1.5rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    .fuel-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .fuel-tab {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 0.5px solid var(--border-hover);
+      background: transparent;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .fuel-tab:hover {
+      background: var(--bg-secondary);
+    }
+
+    .fuel-tab.active {
+      background: var(--accent-bg);
+      color: var(--accent-text);
+      border-color: transparent;
+      font-weight: 500;
+    }
+
+    .slider-row {
+      margin-bottom: 1.5rem;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+
+    .slider-label span:first-child {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .slider-val {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .slider-unit {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 4px;
+      appearance: none;
+      background: var(--border-hover);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--text-primary);
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border: none;
+      border-radius: 50%;
+      background: var(--text-primary);
+      cursor: pointer;
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 2rem 0 1.5rem;
+    }
+
+    .metric {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .metric-unit {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 10px;
+    }
+
+    .breakdown {
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      font-size: 13px;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .breakdown-row:last-child {
+      border-bottom: none;
+    }
+
+    .breakdown-row span:first-child {
+      color: var(--text-secondary);
+    }
+
+    .breakdown-row span:last-child {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .breakdown-row.total {
+      background: var(--bg-secondary);
+    }
+
+    .breakdown-row.total span {
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    footer {
+      margin-top: 2rem;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      text-align: center;
+    }
+
+    @media (max-width: 420px) {
+      .results { grid-template-columns: 1fr 1fr; }
+      .results .metric:last-child { grid-column: span 2; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Fuel Cost Calculator</h1>
+    <p class="subtitle">Estimate your annual fuel spend based on MPG and mileage</p>
+
+    <div class="fuel-tabs" id="fuelTabs">
+      <button class="fuel-tab active" data-fuel="petrol" data-price="1.42">Petrol</button>
+      <button class="fuel-tab" data-fuel="diesel" data-price="1.48">Diesel</button>
+      <button class="fuel-tab" data-fuel="lpg" data-price="0.75">LPG</button>
+      <button class="fuel-tab" data-fuel="electric" data-price="0.28">Electric</button>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">
+        <span id="effLabel">Average MPG</span>
+        <span class="slider-val"><span id="effVal">40</span> <span class="slider-unit" id="effUnit">mpg</span></span>
+      </div>
+      <input type="range" id="effSlider" min="10" max="150" value="40" step="1">
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">
+        <span>Annual mileage</span>
+        <span class="slider-val"><span id="milesVal">10,000</span> <span class="slider-unit">miles</span></span>
+      </div>
+      <input type="range" id="milesSlider" min="1000" max="40000" value="10000" step="500">
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">
+        <span id="priceLabel">Fuel price (per litre)</span>
+        <span class="slider-val">£<span id="priceVal">1.42</span> <span class="slider-unit" id="priceUnit">/litre</span></span>
+      </div>
+      <input type="range" id="priceSlider" min="0.50" max="3.00" value="1.42" step="0.01">
+    </div>
+
+    <div class="results">
+      <div class="metric">
+        <div class="metric-label">Cost per month</div>
+        <div class="metric-value" id="monthly">—</div>
+        <div class="metric-unit">£ / month</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Cost per year</div>
+        <div class="metric-value" id="yearly">—</div>
+        <div class="metric-unit">£ / year</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Cost per mile</div>
+        <div class="metric-value" id="perMile">—</div>
+        <div class="metric-unit">pence / mile</div>
+      </div>
+    </div>
+
+    <p class="section-title">Breakdown</p>
+    <div class="breakdown">
+      <div class="breakdown-row"><span id="volLabel">Litres per year</span><span id="volVal">—</span></div>
+      <div class="breakdown-row"><span id="tankLabel">Full tank fills (50L)</span><span id="tankVal">—</span></div>
+      <div class="breakdown-row"><span>Price per unit</span><span id="unitPrice">—</span></div>
+      <div class="breakdown-row total"><span>Annual fuel cost</span><span id="annualTotal">—</span></div>
+    </div>
+
+    <footer>Fuel prices are UK averages — adjust the slider to match your local prices.</footer>
+  </div>
+
+  <script>
+    const LITRES_PER_GALLON = 4.54609;
+    const TANK_SIZE_LITRES = 50;
+    const TANK_SIZE_KWH = 60;
+
+    let fuelType = 'petrol';
+    let fuelPrice = 1.42;
+    let mpg = 40;
+    let miles = 10000;
+
+    function isElectric() { return fuelType === 'electric'; }
+
+    function calc() {
+      let annualCost, volumePerYear;
+
+      if (isElectric()) {
+        const milesPerKwh = mpg / 3.41;
+        const kwhPerYear = miles / milesPerKwh;
+        annualCost = kwhPerYear * fuelPrice;
+        volumePerYear = kwhPerYear;
+        document.getElementById('volLabel').textContent = 'kWh per year';
+        document.getElementById('tankLabel').textContent = 'Full charges (60 kWh)';
+        document.getElementById('tankVal').textContent = Math.ceil(kwhPerYear / TANK_SIZE_KWH).toLocaleString();
+        document.getElementById('unitPrice').textContent = '£' + fuelPrice.toFixed(2) + ' /kWh';
+      } else {
+        const gallonsPerYear = miles / mpg;
+        const litresPerYear = gallonsPerYear * LITRES_PER_GALLON;
+        annualCost = litresPerYear * fuelPrice;
+        volumePerYear = litresPerYear;
+        document.getElementById('volLabel').textContent = 'Litres per year';
+        document.getElementById('tankLabel').textContent = 'Full tank fills (50L)';
+        document.getElementById('tankVal').textContent = Math.ceil(litresPerYear / TANK_SIZE_LITRES).toLocaleString();
+        document.getElementById('unitPrice').textContent = '£' + fuelPrice.toFixed(2) + ' /litre';
+      }
+
+      const perMileP = (annualCost / miles) * 100;
+
+      document.getElementById('monthly').textContent = '£' + Math.round(annualCost / 12).toLocaleString();
+      document.getElementById('yearly').textContent = '£' + Math.round(annualCost).toLocaleString();
+      document.getElementById('perMile').textContent = perMileP.toFixed(1) + 'p';
+      document.getElementById('volVal').textContent = Math.round(volumePerYear).toLocaleString();
+      document.getElementById('annualTotal').textContent = '£' + annualCost.toFixed(2);
+    }
+
+    function updateFuelUI() {
+      const effSlider = document.getElementById('effSlider');
+      if (isElectric()) {
+        document.getElementById('effLabel').textContent = 'Efficiency (MPGe)';
+        document.getElementById('effUnit').textContent = 'MPGe';
+        document.getElementById('priceLabel').textContent = 'Electricity price (per kWh)';
+        document.getElementById('priceUnit').textContent = '/kWh';
+        document.getElementById('priceSlider').min = 0.10;
+        document.getElementById('priceSlider').max = 1.00;
+        effSlider.min = 50; effSlider.max = 300;
+        if (mpg < 50) { mpg = 100; effSlider.value = 100; }
+      } else {
+        document.getElementById('effLabel').textContent = 'Average MPG';
+        document.getElementById('effUnit').textContent = 'mpg';
+        document.getElementById('priceLabel').textContent = 'Fuel price (per litre)';
+        document.getElementById('priceUnit').textContent = '/litre';
+        document.getElementById('priceSlider').min = 0.50;
+        document.getElementById('priceSlider').max = 3.00;
+        effSlider.min = 10; effSlider.max = 150;
+        if (mpg > 150) { mpg = 40; effSlider.value = 40; }
+      }
+      document.getElementById('effVal').textContent = mpg;
+    }
+
+    document.querySelectorAll('.fuel-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.fuel-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        fuelType = btn.dataset.fuel;
+        fuelPrice = parseFloat(btn.dataset.price);
+        document.getElementById('priceSlider').value = fuelPrice;
+        document.getElementById('priceVal').textContent = fuelPrice.toFixed(2);
+        updateFuelUI();
+        calc();
+      });
+    });
+
+    document.getElementById('effSlider').addEventListener('input', e => {
+      mpg = parseInt(e.target.value);
+      document.getElementById('effVal').textContent = mpg;
+      calc();
+    });
+
+    document.getElementById('milesSlider').addEventListener('input', e => {
+      miles = parseInt(e.target.value);
+      document.getElementById('milesVal').textContent = parseInt(e.target.value).toLocaleString();
+      calc();
+    });
+
+    document.getElementById('priceSlider').addEventListener('input', e => {
+      fuelPrice = parseFloat(e.target.value);
+      document.getElementById('priceVal').textContent = fuelPrice.toFixed(2);
+      calc();
+    });
+
+    calc();
+  </script>
+</body>
+</html>
